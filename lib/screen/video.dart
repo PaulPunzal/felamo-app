@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../baseurl/baseurl.dart';
@@ -36,6 +38,7 @@ class _LessonScreenState extends State<LessonScreen>
   List<bool> videoCompletionStatus = [];
   bool allVideosCompleted = false;
   Duration? lastPosition;
+  Duration _maxReachedPosition = Duration.zero; // tracks furthest watched point
   bool isFullScreen = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -65,6 +68,15 @@ class _LessonScreenState extends State<LessonScreen>
     WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     _animationController.dispose();
+    // Always restore portrait + system UI when leaving the screen
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
     print('Video controller and animation disposed');
     super.dispose();
   }
@@ -73,6 +85,7 @@ class _LessonScreenState extends State<LessonScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused && isVideoInitialized && _controller != null) {
       lastPosition = _controller!.value.position;
+      _savePosition(currentPlayingIndex); // persist to disk
       _controller!.pause();
       print('App paused, video position saved: $lastPosition');
     } else if (state == AppLifecycleState.resumed && isVideoInitialized && _controller != null) {
@@ -202,24 +215,39 @@ class _LessonScreenState extends State<LessonScreen>
     }
 
     _controller = VideoPlayerController.network(videoUrl)
-      ..initialize().then((_) {
+      ..initialize().then((_) async {
         if (mounted) {
+          // Prefer persisted position over in-memory lastPosition
+          final savedPos = await _loadSavedPosition(index);
+          final resumePos = savedPos ?? lastPosition;
           setState(() {
             isVideoInitialized = true;
             isVideoCompleted = false;
+            _maxReachedPosition = resumePos ?? Duration.zero;
           });
           print('Video initialized: $videoUrl');
-          if (lastPosition != null) {
-            _controller!.seekTo(lastPosition!);
-            print('Seeking to last position: $lastPosition');
+          if (resumePos != null) {
+            _controller!.seekTo(resumePos);
+            print('Seeking to resume position: $resumePos');
           }
           _controller!.play();
           _controller!.addListener(() {
             if (_controller!.value.isInitialized) {
-              final isEnded = _controller!.value.position >= _controller!.value.duration;
+              final pos = _controller!.value.position;
+              // Keep maxReachedPosition up to date
+              if (pos > _maxReachedPosition) {
+                _maxReachedPosition = pos;
+              }
+              final isEnded = pos >= _controller!.value.duration;
               if (isEnded && !videoCompletionStatus[index]) {
-                print('Video $index completed at position: ${_controller!.value.position}');
+                print('Video $index completed at position: $pos');
+                _clearSavedPosition(index); // no need to resume a finished video
                 _showCompletionDialog(index);
+              } else if (!isEnded) {
+                // Persist position every ~2 s (avoid hammering prefs on every frame)
+                if (pos.inMilliseconds % 2000 < 100) {
+                  _savePosition(index);
+                }
               }
               // Update buffering state for UI
               if (mounted) {
@@ -326,8 +354,8 @@ class _LessonScreenState extends State<LessonScreen>
                       ),
                       child: Text(
                         firstWatch
-                            ? 'Nakatanggap ka ng $pointsReceived puntos!\nNaka-unlock na ang pagsusulit.'
-                            : 'Naka-unlock na muli ang pagsusulit. Subukang muli!',
+                            ? 'Nakatanggap ka ng $pointsReceived puntos!'
+                            : 'Natanggap na ang Halo-halo bonus reward. Maaari nang muling kumuha ng pagsusulit kung hindi pa pumapasa.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 14,
@@ -364,7 +392,68 @@ class _LessonScreenState extends State<LessonScreen>
     }
   }
 
+  // ── Persistent playback state ──────────────────────────────────────────────
+
+  /// Unique prefs key per session + lesson combination.
+  String _positionKey(int index) =>
+      'video_pos_${widget.sessionId}_${widget.antasId}_${lessons[index]['id']}';
+
+  Future<void> _savePosition(int index) async {
+    if (_controller == null || !isVideoInitialized) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ms = _controller!.value.position.inMilliseconds;
+      await prefs.setInt(_positionKey(index), ms);
+      print('Position saved for lesson $index: ${ms}ms');
+    } catch (e) {
+      print('Failed to save position: $e');
+    }
+  }
+
+  Future<Duration?> _loadSavedPosition(int index) async {
+    if (index >= lessons.length) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ms = prefs.getInt(_positionKey(index));
+      if (ms != null && ms > 0) {
+        print('Loaded saved position for lesson $index: ${ms}ms');
+        return Duration(milliseconds: ms);
+      }
+    } catch (e) {
+      print('Failed to load saved position: $e');
+    }
+    return null;
+  }
+
+  Future<void> _clearSavedPosition(int index) async {
+    if (index >= lessons.length) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_positionKey(index));
+    } catch (e) {
+      print('Failed to clear saved position: $e');
+    }
+  }
+
   void toggleFullScreen() {
+    if (!isFullScreen) {
+      // Enter full screen: landscape + hide system UI
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      // Exit full screen: restore portrait + show system UI
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+    }
     setState(() {
       isFullScreen = !isFullScreen;
       print('Full screen toggled: $isFullScreen');
@@ -429,7 +518,9 @@ class _LessonScreenState extends State<LessonScreen>
   // ── Full screen player ─────────────────────────────────────────────────────
 
   Widget _buildFullScreenPlayer() {
-    return GestureDetector(
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
       onTap: () {
         setState(() => _showVideoControls = !_showVideoControls);
       },
@@ -438,10 +529,17 @@ class _LessonScreenState extends State<LessonScreen>
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // Video fills the entire screen
             if (isVideoInitialized && _controller != null)
-              AspectRatio(
-                aspectRatio: _controller!.value.aspectRatio,
-                child: VideoPlayer(_controller!),
+              SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
+                  ),
+                ),
               ),
 
             // Buffering spinner
@@ -463,37 +561,66 @@ class _LessonScreenState extends State<LessonScreen>
               ),
               // Top bar
               Positioned(
-                top: 40,
+                top: 16,
                 left: 16,
                 right: 16,
-                child: Row(
-                  children: [
-                    _circleButton(Icons.fullscreen_exit_rounded, toggleFullScreen),
-                    const Spacer(),
-                    Text(
-                      lessons.isNotEmpty ? lessons[currentPlayingIndex]['aralin_title'] ?? '' : '',
-                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 40),
-                  ],
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      _circleButton(Icons.fullscreen_exit_rounded, toggleFullScreen),
+                      const Spacer(),
+                      Text(
+                        lessons.isNotEmpty ? lessons[currentPlayingIndex]['aralin_title'] ?? '' : '',
+                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
                 ),
               ),
               // Center play/pause
               _buildCenterPlayButton(),
-              // Bottom bar
+              // Bottom bar with timestamps + progress
               Positioned(
-                bottom: 24,
+                bottom: 16,
                 left: 16,
                 right: 16,
-                child: _buildVideoProgressBar(),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildVideoProgressBar(),
+                      const SizedBox(height: 4),
+                      if (isVideoInitialized && _controller != null)
+                        ValueListenableBuilder(
+                          valueListenable: _controller!,
+                          builder: (_, VideoPlayerValue val, __) {
+                            return Row(
+                              children: [
+                                Text(
+                                  '${_formatDuration(val.position)}  /  ${_formatDuration(val.duration)}',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -618,6 +745,7 @@ class _LessonScreenState extends State<LessonScreen>
             children: [
               GestureDetector(
                 onTap: () {
+                  _savePosition(currentPlayingIndex);
                   Navigator.pop(context);
                   print('Back button pressed, navigating back');
                 },
@@ -840,8 +968,11 @@ class _LessonScreenState extends State<LessonScreen>
           child: Slider(
             value: progress.toDouble(),
             onChanged: (v) {
-              final newPos = Duration(milliseconds: (v * dur).toInt());
-              _controller!.seekTo(newPos);
+              final seekMs = (v * dur).toInt();
+              // Never allow seeking beyond the furthest watched point
+              final maxMs = _maxReachedPosition.inMilliseconds.clamp(0, dur);
+              final clampedMs = seekMs.clamp(0, maxMs);
+              _controller!.seekTo(Duration(milliseconds: clampedMs));
             },
           ),
         );

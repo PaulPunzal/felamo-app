@@ -163,14 +163,14 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Question number + type badge
+                    // Question number + type badge — neutral colours only
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
+                            color: const Color(0xFFEEEEEE),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -178,7 +178,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF388E3C),
+                              color: const Color(0xFF616161),
                             ),
                           ),
                         ),
@@ -211,11 +211,11 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Student's answer (read-only, no correct answer shown)
+                    // Student's answer — neutral styling, no correctness implied
                     Row(
                       children: [
-                        const Icon(Icons.check_circle_outline,
-                            size: 16, color: Color(0xFF388E3C)),
+                        Icon(Icons.edit_note_rounded,
+                            size: 16, color: Colors.grey.shade500),
                         const SizedBox(width: 6),
                         Text(
                           'Iyong sagot: ',
@@ -230,7 +230,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF388E3C),
+                              color: const Color(0xFF424242),
                             ),
                           ),
                         ),
