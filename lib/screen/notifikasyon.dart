@@ -17,15 +17,7 @@ class Notifikasyon extends StatefulWidget {
 class _NotifikasyonState extends State<Notifikasyon> {
   List<dynamic> _notifications = [];
   bool isLoading = true;
-
-  // Define colors for different notification types
-  final List<Color> _cardColors = [
-    Color(0xFFFFB3BA), // Light pink
-    Color(0xFFBAF7BA), // Light green
-    Color(0xFFBAD3FF), // Light blue
-    Color(0xFFFFE4B5), // Light orange
-    Color(0xFFE0BBE4), // Light purple
-  ];
+  String _currentFilter = 'All'; // Can be 'All' or 'Unread'
 
   @override
   void initState() {
@@ -33,91 +25,142 @@ class _NotifikasyonState extends State<Notifikasyon> {
     fetchNotifications();
   }
 
+  // Getter to filter notifications dynamically based on selected tab
+  List<dynamic> get filteredNotifications {
+    if (_currentFilter == 'Unread') {
+      return _notifications.where((n) => n["is_read"] == 0).toList();
+    }
+    return _notifications;
+  }
+
   Future<void> fetchNotifications() async {
     final url = Uri.parse('${baseUrl}get-student-notification.php');
     try {
-      print("Sending session_id: ${widget.sessionid}"); // 🔍 print session id
-
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"}, // Set JSON content type
-        body: jsonEncode({"session_id": widget.sessionid}), // Encode as JSON
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"session_id": widget.sessionid}),
       );
-
-      print("Status Code: ${response.statusCode}"); // 🔍 print status code
-      print("Response: ${response.body}"); // 🔍 print full response
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        print("Decoded Response: $body");
-
         if (body["status"] == "success" && body["data"] != null) {
           setState(() {
             _notifications = body["data"];
             isLoading = false;
           });
         } else {
-          setState(() {
-            isLoading = false;
-          });
-          print("Failed: ${body["message"] ?? "Unknown error"}");
+          setState(() => isLoading = false);
         }
       } else {
-        setState(() {
-          isLoading = false;
-        });
-        print("HTTP Error: ${response.statusCode} - ${response.body}");
+        setState(() => isLoading = false);
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
       print("Error fetching notifications: $e");
+    }
+  }
+
+  Future<void> markAsRead(int notificationId) async {
+    setState(() {
+      final index = _notifications.indexWhere((n) => n["id"].toString() == notificationId.toString());
+      if (index != -1) {
+        _notifications[index]["is_read"] = 1;
+      }
+    });
+
+    final url = Uri.parse('${baseUrl}mark-notification-read.php');
+    try {
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "session_id": widget.sessionid,
+          "action": "single", // Tell PHP it's a single read
+          "notification_id": notificationId
+        }),
+      );
+    } catch (e) {
+      print("Error marking as read: $e");
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    setState(() {
+      for (var notif in _notifications) {
+        notif["is_read"] = 1;
+      }
+    });
+
+    final url = Uri.parse('${baseUrl}mark-notification-read.php');
+    try {
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "session_id": widget.sessionid,
+          "action": "all" // Tell PHP to bulk process
+        }),
+      );
+    } catch (e) {
+      print("Error marking all as read: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFEF2525), // Your specified red color
+      backgroundColor: const Color(0xFFEF2525), 
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
               child: Row(
                 children: [
-                  // --- ADDED BACK BUTTON HERE ---
                   IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  // ------------------------------
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.notifications,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 4),
                   Text(
                     'Notipikasyon',
                     style: GoogleFonts.leagueSpartan(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const Spacer(),
+                  // Mark All as Read Button
+                  TextButton(
+                    onPressed: _notifications.where((n) => n["is_read"] == 0).isEmpty 
+                        ? null 
+                        : markAllAsRead,
+                    child: Text(
+                      "Mark all as read",
+                      style: GoogleFonts.leagueSpartan(
+                        color: _notifications.where((n) => n["is_read"] == 0).isEmpty 
+                            ? Colors.white38 
+                            : Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+
+            // Filter Tabs (All / Unread)
+            Container(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Row(
+                children: [
+                  _buildFilterChip('All'),
+                  const SizedBox(width: 10),
+                  _buildFilterChip('Unread'),
                 ],
               ),
             ),
@@ -125,51 +168,59 @@ class _NotifikasyonState extends State<Notifikasyon> {
             // Content
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8F9FA),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+                    topLeft: Radius.circular(25),
+                    topRight: Radius.circular(25),
                   ),
                 ),
                 child: isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _notifications.isEmpty
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFEF2525)))
+                    : filteredNotifications.isEmpty
                         ? Center(
-                            child: Text(
-                              "Walang notipikasyon",
-                              style: GoogleFonts.leagueSpartan(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey.shade400),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Walang notipikasyon",
+                                  style: GoogleFonts.leagueSpartan(
+                                    fontSize: 18,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
                             ),
                           )
-                        : ListView.builder(
-                            padding: EdgeInsets.all(16),
-                            itemCount: _notifications.length,
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredNotifications.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 10),
                             itemBuilder: (context, index) {
-                              final notif = _notifications[index];
+                              final notif = filteredNotifications[index];
                               
-                              // --- TIMEZONE FIX ---
                               String timeString = notif["created_at"];
-                              // If the server string doesn't have a timezone marker, append 'Z' to treat it as UTC
                               if (!timeString.endsWith("Z")) {
                                 timeString += "Z";
                               }
-                              // Parse as UTC and convert to the user's local device time (UTC+8)
                               final createdAt = DateTime.parse(timeString).toLocal();
-                              // --------------------
-                              
                               final timeAgo = timeago.format(createdAt, locale: 'en_short');
+                              
+                              bool isRead = notif["is_read"] == 1;
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildNotificationCard(
+                              return GestureDetector(
+                                onTap: () {
+                                  if (!isRead) {
+                                    markAsRead(int.parse(notif["id"].toString()));
+                                  }
+                                },
+                                child: _buildCleanNotificationCard(
                                   title: notif["title"],
                                   message: notif["description"],
                                   timeAgo: timeAgo,
-                                  backgroundColor: _cardColors[index % _cardColors.length],
-                                  index: index,
+                                  isRead: isRead,
                                 ),
                               );
                             },
@@ -182,63 +233,111 @@ class _NotifikasyonState extends State<Notifikasyon> {
     );
   }
 
-  Widget _buildNotificationCard({
+  // Filter Tab UI
+  Widget _buildFilterChip(String label) {
+    bool isSelected = _currentFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentFilter = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.leagueSpartan(
+            color: isSelected ? const Color(0xFFEF2525) : Colors.white,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Individual Notification Card UI
+  Widget _buildCleanNotificationCard({
     required String title,
     required String message,
     required String timeAgo,
-    required Color backgroundColor,
-    required int index,
+    required bool isRead,
   }) {
-    return Container(
-      padding: EdgeInsets.all(16),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        color: isRead ? Colors.white : const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRead ? Colors.grey.shade200 : const Color(0xFFFFD6D6),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(isRead ? 0.02 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title + Time
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
+          // Red dot indicator for unread
+          Container(
+            margin: const EdgeInsets.only(top: 6, right: 12),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isRead ? Colors.transparent : const Color(0xFFEF2525),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.leagueSpartan(
+                          fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                          fontSize: 16,
+                          color: isRead ? Colors.black87 : Colors.black,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      timeAgo,
+                      style: GoogleFonts.leagueSpartan(
+                        fontSize: 12,
+                        color: isRead ? Colors.grey.shade500 : const Color(0xFFEF2525),
+                        fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
                   style: GoogleFonts.leagueSpartan(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
+                    fontSize: 14,
+                    color: isRead ? Colors.grey.shade600 : Colors.black87,
+                    height: 1.4,
                   ),
                 ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                timeAgo,
-                style: GoogleFonts.leagueSpartan(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          // Description
-          Text(
-            message,
-            style: GoogleFonts.leagueSpartan(
-              fontSize: 14,
-              color: Colors.black87,
-              height: 1.4,
+              ],
             ),
           ),
         ],
