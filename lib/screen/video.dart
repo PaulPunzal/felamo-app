@@ -112,7 +112,13 @@ class _LessonScreenState extends State<LessonScreen>
         if (jsonData['status'] == 'success' && jsonData['data'] != null) {
           setState(() {
             lessons = List<Map<String, dynamic>>.from(jsonData['data']);
-            videoCompletionStatus = List.generate(lessons.length, (_) => false);
+            videoCompletionStatus = List.generate(lessons.length, (i) {
+              final l = lessons[i];
+              final isDone = l['is_done'] == true || l['is_done'] == 1;
+              final needsRewatch = l['needs_rewatch'] == true || l['needs_rewatch'] == 1;
+              // It is only "completed" for this session if it's done AND doesn't need a rewatch
+              return isDone && !needsRewatch;
+            });
           });
           print('Lessons fetched: ${lessons.length} lessons');
           if (lessons.isNotEmpty) {
@@ -217,38 +223,64 @@ class _LessonScreenState extends State<LessonScreen>
     _controller = VideoPlayerController.network(videoUrl)
       ..initialize().then((_) async {
         if (mounted) {
-          // Prefer persisted position over in-memory lastPosition
+          final lesson = lessons[index];
+          final isDone = lesson['is_done'] == true || lesson['is_done'] == 1;
+          final needsRewatch = lesson['needs_rewatch'] == true || lesson['needs_rewatch'] == 1;
+
+          // Load their saved position. 
+          // Note: Because reaching the end of the video automatically clears the saved position, 
+          // it will naturally be null (0:00) when they FIRST begin their rewatch.
+          // But if they exit midway during the rewatch, it will save and load properly here.
           final savedPos = await _loadSavedPosition(index);
           final resumePos = savedPos ?? lastPosition;
+
           setState(() {
             isVideoInitialized = true;
-            isVideoCompleted = false;
-            _maxReachedPosition = resumePos ?? Duration.zero;
+            
+            // Unlocks the "Go to Quiz" button immediately if they are eligible
+            isVideoCompleted = isDone && !needsRewatch; 
+            
+            // If they are eligible for the quiz, unlock the slider completely for free review.
+            // Otherwise, lock the slider to wherever they currently are to prevent skipping.
+            if (isVideoCompleted) {
+              _maxReachedPosition = const Duration(hours: 99); 
+            } else {
+              _maxReachedPosition = resumePos ?? Duration.zero;
+            }
           });
+
           print('Video initialized: $videoUrl');
+          
+          // ALLOW resuming to the saved position, even during a rewatch phase.
           if (resumePos != null) {
             _controller!.seekTo(resumePos);
             print('Seeking to resume position: $resumePos');
+          } else {
+            _controller!.seekTo(Duration.zero);
           }
+          
           _controller!.play();
+          
           _controller!.addListener(() {
             if (_controller!.value.isInitialized) {
               final pos = _controller!.value.position;
-              // Keep maxReachedPosition up to date
-              if (pos > _maxReachedPosition) {
+              
+              // Keep maxReachedPosition up to date so they can't scrub forward
+              if (pos > _maxReachedPosition && !isVideoCompleted) {
                 _maxReachedPosition = pos;
               }
+              
               final isEnded = pos >= _controller!.value.duration;
               if (isEnded && !videoCompletionStatus[index]) {
                 print('Video $index completed at position: $pos');
-                _clearSavedPosition(index); // no need to resume a finished video
+                _clearSavedPosition(index); // This ensures the NEXT time they watch, it starts at 0:00
                 _showCompletionDialog(index);
               } else if (!isEnded) {
-                // Persist position every ~2 s (avoid hammering prefs on every frame)
                 if (pos.inMilliseconds % 2000 < 100) {
                   _savePosition(index);
                 }
               }
+              
               // Update buffering state for UI
               if (mounted) {
                 final buffering = _controller!.value.isBuffering;
@@ -271,7 +303,7 @@ class _LessonScreenState extends State<LessonScreen>
           );
         }
       });
-  }
+    }
 
   Future<void> _showCompletionDialog(int index) async {
     if (index >= lessons.length || index < 0) return;
@@ -295,6 +327,14 @@ class _LessonScreenState extends State<LessonScreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        
+        // FIX: Update local data so the slider unlocks immediately
+        setState(() {
+          lessons[index]['is_done'] = 1;
+          lessons[index]['needs_rewatch'] = 0;
+          _maxReachedPosition = const Duration(hours: 99); // Unlock slider
+        });
+        
         final bool firstWatch     = data['first_watch']     ?? false;
         final int  pointsReceived = data['points_received'] ?? 0;
 

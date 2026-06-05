@@ -45,6 +45,18 @@ class _AntasPageState extends State<AntasPage> {
     return int.tryParse(lessons[selectedLessonIndex ?? 0]['id'].toString()) ?? widget.aralinId;
   }
 
+  bool get _isVideoDone {
+    if (lessons.isEmpty || selectedLessonIndex == null) return false;
+    final val = lessons[selectedLessonIndex!]['is_done'];
+    return val == true || val == 1;
+  }
+
+  bool get _needsRewatch {
+    if (lessons.isEmpty || selectedLessonIndex == null) return false;
+    final val = lessons[selectedLessonIndex!]['needs_rewatch'];
+    return val == true || val == 1;
+  }
+
   // ── Check whether THIS currently selected aralin's quiz has been passed ──
   Future<void> _checkQuizCompletion() async {
     final targetAralinId = _currentAralinId; // Use the dynamic ID
@@ -99,22 +111,44 @@ class _AntasPageState extends State<AntasPage> {
         MaterialPageRoute(
           builder: (context) => QuizHistoryScreen(
             sessionId: widget.sessionId,
-            aralinId: _currentAralinId, // FIX 3: Pass specific Aralin ID
+            aralinId: _currentAralinId,
           ),
         ),
       );
     } else {
+      // FIX: Enforce video watch and rewatch rules
+      if (!_isVideoDone) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Panoorin muna ang bidyo bago kumuha ng pagsusulit!'),
+            backgroundColor: Color(0xFFC62828),
+          ),
+        );
+        return;
+      }
+
+      if (_needsRewatch) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hindi nakapasa sa huling pagsubok. Panoorin muli ang bidyo...'),
+            backgroundColor: Color(0xFFE65100),
+          ),
+        );
+        return;
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => QuizScreen(
             antasId: widget.antasId,
             sessionId: widget.sessionId,
-            aralinId: _currentAralinId, // FIX 4: Pass specific Aralin ID
+            aralinId: _currentAralinId,
           ),
         ),
       ).then((_) {
         _checkQuizCompletion();
+        fetchLessons(); // FIX: Re-fetch lessons to update the needs_rewatch flag if they failed
       });
     }
   }
@@ -284,7 +318,10 @@ Widget _buildHeroSection() {
                         lessonId: _currentAralinId,
                       ),
                     ),
-                  ).then((_) => _checkQuizCompletion());
+                  ).then((_) {
+                      _checkQuizCompletion();
+                      fetchLessons(); // Triggers UI unlock immediately
+                    });
                 },
               )),
               const SizedBox(width: 12),
@@ -349,12 +386,22 @@ Widget _buildHeroSection() {
       cardColor = Colors.white.withOpacity(0.15);
       cardIcon = Icons.hourglass_empty_rounded;
       cardLabel = 'Naghihintay...';
-      cardSubtitle = 'Sinusuri ang\npagsusulit';
+      cardSubtitle = 'Sinusuri...';
     } else if (_quizCompleted == true) {
       cardColor = const Color(0xFF2E7D32);
       cardIcon = Icons.history_edu_rounded;
       cardLabel = 'Kasaysayan';
-      cardSubtitle = 'Tingnan ang iyong\nmga sagot';
+      cardSubtitle = 'Tingnan ang sagot\nmga sagot';
+    } else if (!_isVideoDone) {
+      cardColor = Colors.grey.shade600; // Locked visually
+      cardIcon = Icons.lock_rounded;
+      cardLabel = 'Naka-lock';
+      cardSubtitle = 'Panoorin muna\nang bidyo';
+    } else if (_needsRewatch) {
+      cardColor = Colors.grey.shade600; // Force rewatch visually
+      cardIcon = Icons.replay_rounded;
+      cardLabel = 'Ulitin ang Bidyo';
+      cardSubtitle = 'Kailangan bago\nmakakuha muli';
     } else {
       cardColor = const Color(0xFFE65100);
       cardIcon = Icons.quiz_rounded;
@@ -666,7 +713,10 @@ Widget _buildHeroSection() {
                           lessonId: _currentAralinId,
                         ),
                       ),
-                    ).then((_) => _checkQuizCompletion());
+                    ).then((_) {
+                        _checkQuizCompletion();
+                        fetchLessons(); // Triggers UI unlock immediately
+                      });
                   },
                   child: Container(
                     padding:
