@@ -622,7 +622,7 @@ class _LessonScreenState extends State<LessonScreen>
                 ),
               ),
               // Center play/pause
-              _buildCenterPlayButton(),
+              _buildCenterControls(),
               // Bottom bar with timestamps + progress
               Positioned(
                 bottom: 16,
@@ -667,6 +667,12 @@ class _LessonScreenState extends State<LessonScreen>
   // ── Normal (non-fullscreen) layout ─────────────────────────────────────────
 
   Widget _buildNormalLayout() {
+    // FIX: Prevent RenderFlex overflow during the split-second orientation transition
+    if (MediaQuery.of(context).orientation == Orientation.landscape) {
+      // Returns a smooth black frame while the OS is busy flipping the screen back to portrait
+      return Container(color: Colors.black); 
+    }
+
     final lesson = lessons.isNotEmpty && currentPlayingIndex < lessons.length
         ? lessons[currentPlayingIndex]
         : null;
@@ -886,7 +892,7 @@ class _LessonScreenState extends State<LessonScreen>
               if (isVideoInitialized && _controller != null && !_controller!.value.isPlaying && !_isBuffering)
                 Container(
                   color: Colors.black26,
-                  child: _buildCenterPlayButton(),
+                  child: _buildCenterControls(),
                 ),
 
               // Bottom gradient + progress bar + fullscreen button
@@ -950,36 +956,95 @@ class _LessonScreenState extends State<LessonScreen>
     );
   }
 
-  // ── Center play button ─────────────────────────────────────────────────────
-
-  Widget _buildCenterPlayButton() {
+  // ── Center Controls (Backward 5s, Play/Pause, Forward 5s) ─────────────────
+  Widget _buildCenterControls() {
     final isPlaying = isVideoInitialized && _controller != null && _controller!.value.isPlaying;
-    return GestureDetector(
-      onTap: () {
-        if (isVideoInitialized && _controller != null) {
-          setState(() {
-            if (_controller!.value.isPlaying) {
-              _controller!.pause();
-            } else {
-              _controller!.play();
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // ── REWIND 5 SECONDS ──
+        GestureDetector(
+          onTap: () {
+            if (isVideoInitialized && _controller != null) {
+              final currentPos = _controller!.value.position;
+              final newPos = currentPos - const Duration(seconds: 5);
+              // Do not let it go below 0:00
+              _controller!.seekTo(newPos < Duration.zero ? Duration.zero : newPos);
             }
-          });
-        }
-      },
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+          },
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            ),
+            child: const Icon(Icons.replay_5_rounded, color: Colors.white, size: 28),
+          ),
         ),
-        child: Icon(
-          isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-          color: Colors.white,
-          size: 34,
+        const SizedBox(width: 28),
+
+        // ── PLAY / PAUSE ──
+        GestureDetector(
+          onTap: () {
+            if (isVideoInitialized && _controller != null) {
+              setState(() {
+                if (_controller!.value.isPlaying) {
+                  _controller!.pause();
+                } else {
+                  _controller!.play();
+                }
+              });
+            }
+          },
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+            ),
+            child: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
+          ),
         ),
-      ),
+        const SizedBox(width: 28),
+
+        // ── FORWARD 5 SECONDS ──
+        GestureDetector(
+          onTap: () {
+            if (isVideoInitialized && _controller != null) {
+              final currentPos = _controller!.value.position;
+              final dur = _controller!.value.duration;
+              var newPos = currentPos + const Duration(seconds: 5);
+
+              // Limit the forward skip to _maxReachedPosition so they can't skip un-watched parts
+              final maxMs = _maxReachedPosition.inMilliseconds.clamp(0, dur.inMilliseconds);
+              if (newPos.inMilliseconds > maxMs) {
+                newPos = Duration(milliseconds: maxMs);
+              }
+
+              _controller!.seekTo(newPos);
+            }
+          },
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            ),
+            child: const Icon(Icons.forward_5_rounded, color: Colors.white, size: 28),
+          ),
+        ),
+      ],
     );
   }
 

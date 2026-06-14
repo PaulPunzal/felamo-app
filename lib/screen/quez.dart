@@ -1315,7 +1315,7 @@ class _ResultDialog extends StatelessWidget {
             if (!isPass) ...[
               const SizedBox(height: 10),
               Text(
-                'Kailangan ng 80% para pumasa.\nPanoorin muli ang bidyo bago subukan muli.',
+                'Kailangan ng 50% para pumasa.\nPanoorin muli ang bidyo bago subukan muli.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600], height: 1.5),
               ),
