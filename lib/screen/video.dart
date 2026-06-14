@@ -211,7 +211,26 @@ class _LessonScreenState extends State<LessonScreen>
       return;
     }
 
-    String videoUrl = '${storageUrl}videos/${lesson['attachment_filename']}';
+    final attachment = lesson['attachment_filename'] ?? '';
+    if (attachment.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Video file not found', style: GoogleFonts.poppins(fontSize: 14))),
+        );
+      }
+      return;
+    }
+
+    String videoUrl;
+    // Check if the database gave us a Cloudinary URL or an old local filename
+    if (attachment.startsWith('http://') || attachment.startsWith('https://')) {
+      videoUrl = attachment; // New Cloudinary video
+    } else {
+      videoUrl = '${storageUrl}videos/$attachment'; // Old local fallback
+    }
+
+    print('Initializing video: $videoUrl');
+    currentPlayingIndex = index;
     print('Initializing video: $videoUrl');
     currentPlayingIndex = index;
 

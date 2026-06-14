@@ -734,15 +734,6 @@ class _DashboardState extends State<Dashboard> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Video: ${aralin.attachment_filename.isNotEmpty ? aralin.attachment_filename : 'No Video'}',
-                                    style: GoogleFonts.leagueSpartan(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
                                 ],
                               ),
                             ),
