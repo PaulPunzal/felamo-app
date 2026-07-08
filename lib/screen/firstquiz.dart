@@ -34,8 +34,8 @@ class _FirstquizState extends State<Firstquiz> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data['status'] == 'success' && data['data'].isNotEmpty) {
-        final filename = data['data'][0]['attachment_filename'];
-        final videoUrl = '${storageUrl}videos/$filename';
+        final videoUrl = resolveVideoUrl(data['data'][0]['attachment_filename']);
+        print('===VIDEO URL===: $videoUrl');   // ADD THIS LINE
 
         _controller = VideoPlayerController.network(videoUrl)
           ..initialize().then((_) {
