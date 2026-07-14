@@ -63,6 +63,14 @@ class _SignUpState extends State<SignUp> {
     });
   }
 
+  String _extractErrorMessage(Map<String, dynamic> json) {
+  final errors = json['errors'];
+  if (errors is List && errors.isNotEmpty) {
+    return errors.join('\n');
+  }
+  return json['message'] ?? 'Something went wrong.';
+}
+
   bool _isValidEmail(String email) {
     return email.isNotEmpty &&
         RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
@@ -70,14 +78,28 @@ class _SignUpState extends State<SignUp> {
 
   Future<void> _sendOtp() async {
     final email = _emailController.text.trim();
+    final lrn = _lrnController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
     if (email.isEmpty) {
       _showMessage('Please enter your email');
       return;
     }
-
     if (!_isValidEmail(email)) {
       _showMessage('Please enter a valid email address');
+      return;
+    }
+    if (lrn.isEmpty || !RegExp(r'^\d{10,}$').hasMatch(lrn)) {
+      _showMessage('LRN must be at least 10 digits');
+      return;
+    }
+    if (password.isEmpty || password.length < 6) {
+      _showMessage('Password must be at least 6 characters');
+      return;
+    }
+    if (password != confirmPassword) {
+      _showMessage('Passwords do not match');
       return;
     }
 
@@ -114,9 +136,9 @@ class _SignUpState extends State<SignUp> {
 
       if (json['status'] == 200) {
         _startResendTimer();
-        _showMessage(json['message'] ?? 'OTP sent!');
+        _showSuccessMessage(json['message'] ?? 'OTP sent!');
       } else {
-        _showMessage(json['message'] ?? 'Failed to send OTP');
+        _showMessage(_extractErrorMessage(json));
       }
     } catch (e) {
       if (mounted) _showMessage('Connection issue: $e');
@@ -180,7 +202,7 @@ class _SignUpState extends State<SignUp> {
       if (json['status'] == 'success') {
         _showSuccessDialog();
       } else {
-        _showMessage(json['message'] ?? 'Registration failed');
+        _showMessage(_extractErrorMessage(json));
       }
     } catch (e) {
       if (mounted) _showMessage('Error: $e');
@@ -213,8 +235,34 @@ class _SignUpState extends State<SignUp> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFDC143C),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFDC143C), // red
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2E7D32), // green
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
