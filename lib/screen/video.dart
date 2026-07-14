@@ -222,9 +222,9 @@ class _LessonScreenState extends State<LessonScreen>
     }
 
     String videoUrl;
-    // Check if the database gave us a Cloudinary URL or an old local filename
+    // Check if the database gave us a Cloudflare URL or an old local filename
     if (attachment.startsWith('http://') || attachment.startsWith('https://')) {
-      videoUrl = attachment; // New Cloudinary video
+      videoUrl = attachment; // New r2 cloudflare video
     } else {
       videoUrl = '${storageUrl}videos/$attachment'; // Old local fallback
     }

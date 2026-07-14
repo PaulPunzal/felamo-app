@@ -84,7 +84,7 @@ class _SignUpState extends State<SignUp> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse('${baseUrl}register-sent-otp.php');
+      final url = Uri.parse('${baseUrl}verify-email.php');
       print('SEND OTP → $url');
     
       final response = await http.post(
@@ -150,7 +150,7 @@ class _SignUpState extends State<SignUp> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse('${baseUrl}register-v2.php');
+      final url = Uri.parse('${baseUrl}register.php');
       print('REGISTER → $url');
 
       final response = await http.post(
