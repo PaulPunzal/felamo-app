@@ -75,11 +75,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFB71C1C), Color(0xFF8B0000)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: Color(0xFF330006),
         ),
         child: SafeArea(
           child: isLoading
@@ -131,7 +127,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
                     Expanded(
                       child: Container(
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: Color(0xFFE9DFC7),
                           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                         ),
                         child: Column(
@@ -163,7 +159,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
                     
                     // Bottom Info Bar
                     Container(
-                      color: const Color(0xFF38B6FF),
+                      color: const Color(0xFF330006),
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,7 +298,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.orange,
+            backgroundColor: const Color(0xFF4e0506),
             radius: 20,
             child: Text(
               '${item.rank}',
@@ -336,7 +332,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
               ],
             ),
           ),
-          const Icon(Icons.star, color: Colors.orange, size: 24),
+          const Icon(Icons.star, color: Color(0xFF4e0506), size: 24),
         ],
       ),
     );

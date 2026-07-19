@@ -81,8 +81,8 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFD32F2F), // Lighter red
-            Color(0xFFB71C1C), // Darker red
+            Color(0xFF4e0506), // Lighter red
+            Color(0xFF4e0506), // Darker red
           ],
         ),
         borderRadius: BorderRadius.circular(35),

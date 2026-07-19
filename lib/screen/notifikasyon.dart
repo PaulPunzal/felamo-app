@@ -110,7 +110,7 @@ class _NotifikasyonState extends State<Notifikasyon> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEF2525), 
+      backgroundColor: const Color(0xFF330006), 
       body: SafeArea(
         child: Column(
           children: [
@@ -169,7 +169,7 @@ class _NotifikasyonState extends State<Notifikasyon> {
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF8F9FA),
+                  color: Color(0xFFE9DFC7),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(25),
                     topRight: Radius.circular(25),
@@ -274,10 +274,10 @@ class _NotifikasyonState extends State<Notifikasyon> {
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isRead ? Colors.white : const Color(0xFFFFF0F0),
+        color: isRead ? const Color(0xFF330006).withOpacity(0.06) : const Color(0xFF330006).withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isRead ? Colors.grey.shade200 : const Color(0xFFFFD6D6),
+          color: isRead ? Colors.grey.shade200 : const Color(0xFF330006).withOpacity(0.3),
           width: 1,
         ),
         boxShadow: [

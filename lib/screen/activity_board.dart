@@ -79,22 +79,22 @@ class _ActivityBoardScreenState extends State<ActivityBoardScreen> {
       case 'login':
         return {
           'icon':  Icons.login_rounded,
-          'color': const Color(0xFF1976D2),
-          'bg':    const Color(0xFFE3F2FD),
+          'color': const Color(0xFF4e0506),
+          'bg':    const Color(0xFF4e0506).withOpacity(0.1),
           'label': 'Login',
         };
       case 'video':
         return {
           'icon':  Icons.play_circle_fill,
-          'color': const Color(0xFF388E3C),
-          'bg':    const Color(0xFFE8F5E9),
+          'color': const Color(0xFF4e0506),
+          'bg':    const Color(0xFF4e0506).withOpacity(0.1),
           'label': 'Video',
         };
       case 'quiz':
         return {
           'icon':  Icons.quiz_rounded,
-          'color': const Color(0xFFF57C00),
-          'bg':    const Color(0xFFFFF3E0),
+          'color': const Color(0xFF4e0506),
+          'bg':    const Color(0xFF4e0506).withOpacity(0.1),
           'label': 'Quiz',
         };
       default:
@@ -130,9 +130,9 @@ class _ActivityBoardScreenState extends State<ActivityBoardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: const Color(0xFFE9DFC7),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB71C1C),
+        backgroundColor: const Color(0xFF330006),
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
@@ -180,7 +180,7 @@ class _ActivityBoardScreenState extends State<ActivityBoardScreen> {
 
   Widget _buildSummaryBar() {
     return Container(
-      color: const Color(0xFFB71C1C),
+      color: const Color(0xFF330006),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       child: Row(
         children: [

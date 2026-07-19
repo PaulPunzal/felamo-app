@@ -637,11 +637,7 @@ class _QuizScreenState extends State<QuizScreen>
 
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF8B0000), Color(0xFFC62828)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Color(0xFF330006),
       ),
       child: SafeArea(
         bottom: false,
@@ -715,7 +711,7 @@ class _QuizScreenState extends State<QuizScreen>
   Widget _buildProgressSection() {
     final progress = (currentIndex + 1) / questions.length;
     return Container(
-      color: const Color(0xFFC62828),
+      color: const Color(0xFF330006),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(100),
@@ -1065,12 +1061,12 @@ class _QuizScreenState extends State<QuizScreen>
         child: ElevatedButton(
           onPressed: isEnabled ? nextQuestion : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isEnabled ? const Color(0xFFC62828) : Colors.grey.shade300,
+            backgroundColor: isEnabled ? const Color(0xFF330006) : Colors.grey.shade300,
             foregroundColor: Colors.white,
             disabledBackgroundColor: Colors.grey.shade200,
             disabledForegroundColor: Colors.grey.shade400,
             elevation: isEnabled ? 4 : 0,
-            shadowColor: const Color(0xFFC62828).withOpacity(0.4),
+            shadowColor: const Color(0xFF330006).withOpacity(0.4),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           child: Row(
@@ -1238,7 +1234,7 @@ class _ResultDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct  = total > 0 ? ((score / total) * 100).round() : 0;
-    final color = isPass ? const Color(0xFF2E7D32) : const Color(0xFFC62828);
+    final color = const Color(0xFF330006);
     final bg    = isPass ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
 
     return Dialog(

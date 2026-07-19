@@ -269,11 +269,11 @@ class _SignUpState extends State<SignUp> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryRed = Color(0xFFDC143C); // Bright red like in the image
+    const primaryRed = Color(0xFF330006); // Bright red like in the image
     final transparentRed = primaryRed.withOpacity(0.5);
 
     return Scaffold(
-      backgroundColor:const Color.fromARGB(255, 255, 17, 0).withOpacity(0.5), // Light pinkish red background
+      backgroundColor: const Color(0xFF330006), // Header background behind the logo
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -293,7 +293,7 @@ class _SignUpState extends State<SignUp> {
               // White Container Card - No margin
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFE9DFC7),
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
@@ -478,7 +478,7 @@ class _SignUpState extends State<SignUp> {
     int? maxLength,
     Widget? suffix,
   }) {
-    const primaryRed = Color(0xFFDC143C);
+    const primaryRed = Color(0xFF330006);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -710,7 +710,7 @@ class _LessonScreenState extends State<LessonScreen>
         Expanded(
           child: Container(
             decoration: const BoxDecoration(
-              color: Color(0xFFF7F3F0),
+              color: Color(0xFF330006),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
@@ -740,7 +740,7 @@ class _LessonScreenState extends State<LessonScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A1A1A),
+                      color: Colors.white,
                       height: 1.3,
                     ),
                   ),
@@ -799,7 +799,7 @@ class _LessonScreenState extends State<LessonScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF8B0000), Color(0xFFB71C1C), Color(0xFFD32F2F)],
+          colors: [Color(0xFF330006), Color(0xFF330006), Color(0xFF330006)],
         ),
       ),
       child: SafeArea(
@@ -1110,7 +1110,7 @@ class _LessonScreenState extends State<LessonScreen>
     final lines = details.split('\n').where((d) => d.trim().isNotEmpty).toList();
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFE9DFC7),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 3)),
@@ -1123,7 +1123,7 @@ class _LessonScreenState extends State<LessonScreen>
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             decoration: const BoxDecoration(
-              color: Color(0xFFE3F2FD),
+              color: Color(0xFF4e0506),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -1131,14 +1131,14 @@ class _LessonScreenState extends State<LessonScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.flag_rounded, color: Color(0xFF1565C0), size: 18),
+                const Icon(Icons.flag_rounded, color: Color(0xFFffffff), size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Mga Layunin sa Pagkatuto',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1565C0),
+                    color: const Color(0xFFffffff),
                   ),
                 ),
               ],
@@ -1159,7 +1159,7 @@ class _LessonScreenState extends State<LessonScreen>
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Color(0xFF1565C0),
+                          color: Color(0xFF330006),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -1192,15 +1192,15 @@ class _LessonScreenState extends State<LessonScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFB71C1C), Color(0xFFE53935)],
+        gradient: LinearGradient(
+          colors: [const Color(0xFF4e0506), const Color(0xFF4e0506).withOpacity(0.85)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFB71C1C).withOpacity(0.3),
+            color: const Color(0xFF4e0506).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1272,15 +1272,19 @@ class _LessonScreenState extends State<LessonScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF4e0506),
+              const Color(0xFF4e0506).withOpacity(0.9),
+              const Color(0xFF4e0506).withOpacity(0.8),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2E7D32).withOpacity(0.35),
+              color: const Color(0xFF4e0506).withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

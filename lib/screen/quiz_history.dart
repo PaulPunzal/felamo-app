@@ -70,13 +70,14 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE9DFC7),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF388E3C),
+        backgroundColor: const Color(0xFF330006),
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: const BoxDecoration(
-            color: Color(0xFF2E7D32),
+            color: Color(0xFF330006),
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -94,7 +95,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF388E3C)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF330006)))
           : _historyData == null
               ? Center(
                   child: Text(
@@ -117,7 +118,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
         // Score header
         Container(
           width: double.infinity,
-          color: const Color(0xFF388E3C),
+          color: const Color(0xFF330006),
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
           child: Column(
             children: [
@@ -178,7 +179,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF616161),
+                              color: const Color(0xFF330006),
                             ),
                           ),
                         ),
@@ -189,12 +190,13 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF4e0506)),
                           ),
                           child: Text(
                             _typeLabel(item['type']),
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Colors.grey.shade700,
+                              color: const Color(0xFF4e0506),
                             ),
                           ),
                         ),
@@ -230,7 +232,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF424242),
+                              color: const Color(0xFF330006),
                             ),
                           ),
                         ),

@@ -185,11 +185,7 @@ class _ProfileState extends State<Profile> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF800000), Color(0xFFFFF8DC)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: const Color(0xFF330006),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -208,7 +204,7 @@ class _ProfileState extends State<Profile> {
         ),
                 title: Text(
                   'Personal na Impormasyon',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -254,7 +250,7 @@ class _ProfileState extends State<Profile> {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: const Color(0xFFE9DFC7),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Form(
@@ -286,7 +282,7 @@ class _ProfileState extends State<Profile> {
                         child: ElevatedButton(
                           onPressed: isSaving ? null : _updateProfile,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB71C1C),
+                            backgroundColor: const Color(0xFF330006),
                             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),

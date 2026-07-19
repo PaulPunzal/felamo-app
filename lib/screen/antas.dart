@@ -222,14 +222,14 @@ class _AntasPageState extends State<AntasPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: const Color(0xFF330006),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHeroSection()),
           SliverToBoxAdapter(
             child: Container(
               decoration: const BoxDecoration(
-                color: Color(0xFFF4F6F9),
+                color: Color(0xFF330006),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
               ),
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
@@ -257,16 +257,7 @@ class _AntasPageState extends State<AntasPage> {
 Widget _buildHeroSection() {
   return Container(
     decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF8B0000), // deep maroon at top-left
-          Color(0xFFC62828), // standard red mid
-          Color(0xFFE57373), // soft rose at bottom-right
-        ],
-        stops: [0.0, 0.55, 2.0],
-      ),
+      color: Color(0xFFE9DFC7),
     ),
     padding: const EdgeInsets.fromLTRB(20, 56, 20, 28),
       child: Column(
@@ -280,17 +271,17 @@ Widget _buildHeroSection() {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.20),
+                    color: const Color(0xFF330006).withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                  child: const Icon(Icons.arrow_back, color: Color(0xFF330006), size: 18),
                 ),
               ),
               const SizedBox(width: 12),
               const Text(
                 'Panimulang Antas',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF330006),
                   fontSize: 17,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.1,
@@ -305,7 +296,7 @@ Widget _buildHeroSection() {
                 icon: Icons.menu_book_rounded,
                 label: 'Modyul',
                 subtitle: 'Manood ng\nbidyong aralin',
-                color: const Color(0xFF1565C0),
+                color: const Color(0xFF7D2438),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -378,6 +369,7 @@ Widget _buildHeroSection() {
 
   Widget _buildQuizActionCard() {
     Color cardColor;
+    Color cardTextColor = Colors.white;
     IconData cardIcon;
     String cardLabel;
     String cardSubtitle;
@@ -388,7 +380,7 @@ Widget _buildHeroSection() {
       cardLabel = 'Naghihintay...';
       cardSubtitle = 'Sinusuri...';
     } else if (_quizCompleted == true) {
-      cardColor = const Color(0xFF2E7D32);
+      cardColor = const Color(0xFF7D2438);
       cardIcon = Icons.history_edu_rounded;
       cardLabel = 'Kasaysayan';
       cardSubtitle = 'Tingnan ang sagot\nmga sagot';
@@ -403,7 +395,7 @@ Widget _buildHeroSection() {
       cardLabel = 'Ulitin ang Bidyo';
       cardSubtitle = 'Kailangan bago\nmakakuha muli';
     } else {
-      cardColor = const Color(0xFFE65100);
+      cardColor = const Color(0xFF9A3049);
       cardIcon = Icons.quiz_rounded;
       cardLabel = 'Pagsusulit';
       cardSubtitle = 'Magpatakbo ng\nmga pagsusulit';
@@ -425,19 +417,19 @@ Widget _buildHeroSection() {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.20),
+                color: cardTextColor.withOpacity(0.20),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(cardIcon, color: Colors.white, size: 20),
+              child: Icon(cardIcon, color: cardTextColor, size: 20),
             ),
             const SizedBox(height: 10),
             Text(cardLabel,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                    color: cardTextColor, fontSize: 14, fontWeight: FontWeight.w500)),
             const SizedBox(height: 3),
             Text(cardSubtitle,
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.75),
+                    color: cardTextColor.withOpacity(0.75),
                     fontSize: 11,
                     height: 1.4)),
           ],
@@ -451,19 +443,19 @@ Widget _buildHeroSection() {
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        border: Border.all(color: const Color(0xFFA5D6A7), width: 0.5),
+        color: const Color(0xFF2E7D32).withOpacity(0.12),
+        border: Border.all(color: const Color(0xFFffffff).withOpacity(0.35), width: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 18),
-          SizedBox(width: 8),
+        children: [
+          const Icon(Icons.verified_rounded, color: Color(0xFFffffff), size: 18),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Matagumpay mong natapos ang pagsusulit na ito!',
               style: TextStyle(
-                color: Color(0xFF2E7D32),
+                color: const Color(0xFFffffff),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -480,7 +472,7 @@ Widget _buildHeroSection() {
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF9E9E9E),
+        color: Color(0xFFE9DFC7),
         letterSpacing: 0.6,
       ),
     );
@@ -536,11 +528,11 @@ Widget _buildHeroSection() {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white.withOpacity(0.15),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFFC62828)
-                    : const Color(0xFFE0E0E0),
+                    ? const Color(0xFFE9DFC7)
+                    : const Color(0xFFE9DFC7).withOpacity(0.25),
                 width: isSelected ? 1.5 : 0.5,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -567,8 +559,8 @@ Widget _buildHeroSection() {
                           fontSize: 14,
                           fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                           color: isSelected
-                              ? const Color(0xFFC62828)
-                              : const Color(0xFF212121),
+                              ? const Color(0xFFF4A6A6)
+                              : const Color(0xFFE9DFC7),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -578,16 +570,16 @@ Widget _buildHeroSection() {
                         isSelected
                             ? 'Kasalukuyang pinipili'
                             : 'I-tap upang pumili',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF9E9E9E),
+                          color: const Color(0xFFE9DFC7).withOpacity(0.65),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: Color(0xFFBDBDBD), size: 18),
+                Icon(Icons.chevron_right_rounded,
+                    color: const Color(0xFFE9DFC7).withOpacity(0.6), size: 18),
               ],
             ),
           ),
@@ -607,8 +599,7 @@ Widget _buildHeroSection() {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
+      color: const Color(0xFFE9DFC7),
       borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -618,7 +609,7 @@ Widget _buildHeroSection() {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            color: const Color(0xFFC62828),
+            color: const Color(0xFF4E0506),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

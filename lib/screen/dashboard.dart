@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:felamo/baseurl/baseurl.dart';
@@ -44,6 +43,7 @@ class _DashboardState extends State<Dashboard> {
   int? _points;
   String? _profilePicture;
   String? _avatarFileName;
+  int _profileFetchedAt = 0;
 
   @override
   void initState() {
@@ -122,7 +122,12 @@ class _DashboardState extends State<Dashboard> {
             }
             
             _profilePicture = jsonData['data']['profile_picture']?.toString();
-            _avatarFileName = jsonData['data']['avatar_file_name']?.toString() ?? 'default_avatar.webp';
+            // Leave this null when the backend has no frame set for the user.
+            // Defaulting it to 'profile.png' here made the "no custom frame"
+            // case indistinguishable from "has a frame", which caused the
+            // default avatar to render twice (duplicate look).
+            _avatarFileName = jsonData['data']['avatar_file_name']?.toString();
+            _profileFetchedAt = DateTime.now().millisecondsSinceEpoch;
           });
           print('Profile fetched: LRN=$_lrn, Points=$_points, ProfilePicture=$_profilePicture, Avatar=$_avatarFileName');
         } else {
@@ -364,13 +369,15 @@ class _DashboardState extends State<Dashboard> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Kumpletuhin ang ', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                          Text('7 araw', style: TextStyle(fontSize: 10, color: Colors.orange.shade600, fontWeight: FontWeight.w600)),
-                          Text(' para makakuha ng Halo-halo! ', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                        ],
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: 'Kumpletuhin ang ', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                            TextSpan(text: '7 araw', style: TextStyle(fontSize: 10, color: Colors.orange.shade600, fontWeight: FontWeight.w600)),
+                            TextSpan(text: ' para makakuha ng Halo-halo!', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -392,7 +399,11 @@ class _DashboardState extends State<Dashboard> {
         Navigator.pushNamed(context, '/lessons');
         break;
       case 2:
-        Navigator.pushNamed(context, '/profile');
+        Navigator.pushNamed(context, '/profile').then((_) {
+          // Refresh so a newly uploaded picture/frame shows up immediately
+          // on return, instead of waiting for the next full screen load.
+          fetchProfile();
+        });
         break;
     }
   }
@@ -404,11 +415,7 @@ class _DashboardState extends State<Dashboard> {
       extendBody: true,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF800000), Color(0xFFFFF8DC)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: Color(0xFF330006),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -442,63 +449,78 @@ class _DashboardState extends State<Dashboard> {
 
   Widget _buildHeader() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
       padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
           // Stack keeps the Frame directly on top of the Profile Picture
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Profile Picture (Inner Circle) - Size 80x80
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(color: Colors.white, width: 2),
-                  image: DecorationImage(
-                    image: _profilePicture != null && _profilePicture!.isNotEmpty
-                        ? Image.network(
-                            '${storageUrl}profile-pictures/${path.basename(_profilePicture!)}',
-                            errorBuilder: (context, error, stackTrace) {
-                              print('Error loading profile picture: $error');
-                              return Image.asset('assets/profile.png');
-                            },
-                          ).image
-                        : const AssetImage('assets/profile.png') as ImageProvider,
-                    fit: BoxFit.cover,
+          SizedBox(
+            width: 76,
+            height: 76,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 1. Profile Picture (Inner Circle) - Size 70x70
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(35),
+                    border: Border.all(color: Colors.white, width: 2),
+                    image: DecorationImage(
+                      image: _profilePicture != null && _profilePicture!.isNotEmpty
+                          ? Image.network(
+                              // Cache-busting query param: without this, Flutter's
+                              // image cache keeps serving the old bytes for the
+                              // same URL even after you upload a new picture.
+                              '${storageUrl}profile-pictures/${path.basename(_profilePicture!)}?v=$_profileFetchedAt',
+                              errorBuilder: (context, error, stackTrace) {
+                                print('Error loading profile picture: $error');
+                                return Image.asset('assets/profile.png');
+                              },
+                            ).image
+                          : const AssetImage('assets/profile.png') as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-              
-              // 2. Avatar/Frame (Outer Layer) - Size 110x110
-              // This renders directly over the profile picture
-              Container(
-                width: 110, // Slightly larger than 80 to act as a border/frame
-                height: 90,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(55),
-                  image: DecorationImage(
-                    image: _avatarFileName != null && _avatarFileName!.isNotEmpty
-                        ? Image.network(
-                            '${storageUrl}/assets/$_avatarFileName',
-                            errorBuilder: (context, error, stackTrace) {
-                              print('Error loading avatar frame: $error');
-                              return Image.asset('assets/default_avatar.png');
-                            },
-                          ).image
-                        : const AssetImage('assets/default_avatar.png') as ImageProvider,
-                    // Note: Depending on your frame's transparent padding, you might 
-                    // need to change this to BoxFit.contain instead of BoxFit.cover
-                    fit: BoxFit.cover, 
+
+                // 2. Avatar/Frame (Outer Layer)
+                // Only render this on top when the user actually has a custom
+                // frame set. Otherwise it just duplicates the default profile
+                // image and makes the avatar look "doubled".
+                if (_avatarFileName != null && _avatarFileName!.isNotEmpty)
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(38),
+                      image: DecorationImage(
+                        image: Image.network(
+                          '${storageUrl}assets/$_avatarFileName',
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error loading avatar frame: $error');
+                            // Fall back to nothing rather than the default
+                            // profile picture, to avoid the duplicate look.
+                            return const SizedBox.shrink();
+                          },
+                        ).image,
+                        // Note: Depending on your frame's transparent padding, you might
+                        // need to change this to BoxFit.contain instead of BoxFit.cover
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          
-          const SizedBox(width: 16),
+
+          const SizedBox(width: 12),
 
           // 3. User Details
           Expanded(
@@ -508,7 +530,7 @@ class _DashboardState extends State<Dashboard> {
                 Text(
                   'Kumusta, ${widget.firstName}!',
                   style: GoogleFonts.leagueSpartan(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
@@ -536,7 +558,7 @@ class _DashboardState extends State<Dashboard> {
       margin: const EdgeInsets.all(16.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -571,7 +593,11 @@ class _DashboardState extends State<Dashboard> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       gradient: LinearGradient(
-                        colors: [Colors.blue[400]!, Colors.yellow[300]!, Colors.pink[200]!],
+                        colors: [
+                          Color(0xFF4A0E1A),
+                          Color(0xFF800000),
+                          Color(0xFFD98E9B),
+                        ],
                         stops: [0.0, 0.5, 1.0],
                       ),
                     ),
@@ -591,7 +617,7 @@ class _DashboardState extends State<Dashboard> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Color(0xffe9dfc7),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -599,12 +625,12 @@ class _DashboardState extends State<Dashboard> {
         children: [
           Text(
             'Simulan ang Pag-aaral',
-            style: GoogleFonts.leagueSpartan(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+            style: GoogleFonts.leagueSpartan(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
           ),
           const SizedBox(height: 8),
           Text(
             'Tapusin muna ang unang markahan upang ma-unlock ang mga susunod na aralin.',
-            style: GoogleFonts.leagueSpartan(fontSize: 12, color: Colors.grey),
+            style: GoogleFonts.leagueSpartan(fontSize: 15, color: Colors.black),
           ),
           const SizedBox(height: 16),
           antasList.isEmpty
@@ -756,15 +782,15 @@ class _DashboardState extends State<Dashboard> {
   Color _getColorForLevel(int level) {
     switch (level) {
       case 1:
-        return const Color(0xFF4CAF50);
+        return const Color(0xFF6D1B2F);
       case 2:
-        return const Color(0xFF2196F3);
+        return const Color(0xFF7D2438);
       case 3:
-        return const Color(0xFFFFC107);
+        return const Color(0xFF8B2942);
       case 4:
-        return const Color(0xFFF44336);
+        return const Color(0xFF9A3049);
       default:
-        return Colors.grey;
+        return const Color(0xFF6D1B2F);
     }
   }
 

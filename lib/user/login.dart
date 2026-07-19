@@ -349,10 +349,10 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryRed = Color(0xFFDC143C);
+    const primaryRed = Color(0xFF330006);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFE5E5),
+      backgroundColor: const Color(0xFF330006),
       body: SafeArea(
         child: Column(
           children: [
@@ -374,7 +374,7 @@ class _LoginState extends State<Login> {
                     minHeight: MediaQuery.of(context).size.height - 200,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFFE9DFC7),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
@@ -541,7 +541,7 @@ class _LoginState extends State<Login> {
     IconData? suffixIcon,
     Widget? suffix,
   }) {
-    const primaryRed = Color(0xFFDC143C);
+    const primaryRed = Color(0xFF330006);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

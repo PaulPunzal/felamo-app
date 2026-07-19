@@ -198,15 +198,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFB71C1C),
+      backgroundColor: const Color(0xFF330006),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB71C1C),
+        backgroundColor: const Color(0xFF330006),
         elevation: 0,
         title: Text(
           'Mga Setting',
           style: GoogleFonts.leagueSpartan(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: const Color(0xFFFFFFFF),
           ),
         ),
         leading: Container(
@@ -228,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.all(20),
             width: MediaQuery.of(context).size.width * 0.9,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFE9DFC7),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -244,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue[100]?.withOpacity(0.3),
+                      color: const Color(0xFF330006).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -357,7 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF44336),
+                      backgroundColor: const Color(0xFF330006),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -432,14 +433,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Color _getIconBackgroundColor(IconData icon) {
-    if (icon == Icons.history_rounded) return Colors.teal[300]!;
-    if (icon == Icons.people) return Colors.blue[300]!;
-    if (icon == Icons.notifications) return Colors.purple[300]!;
-    if (icon == Icons.volume_up) return Colors.green[300]!;
-    if (icon == Icons.dark_mode) return Colors.orange[300]!;
-    if (icon == Icons.brush) return Colors.yellow[300]!;
-    if (icon == Icons.info) return Colors.blue[300]!;
-    if (icon == Icons.lock) return Colors.red[300]!;
-    return Colors.grey[300]!;
+    return const Color(0xFF330006);
   }
 }

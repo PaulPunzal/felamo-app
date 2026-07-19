@@ -307,13 +307,13 @@ class _MyWidgetState extends State<MyWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.red.shade700,
+      backgroundColor: const Color(0xFF330006),
       body: SafeArea(
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.red.shade700,
+              color: const Color(0xFF330006),
               child: Row(
                 children: [
                   GestureDetector(
@@ -347,7 +347,7 @@ class _MyWidgetState extends State<MyWidget> {
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFFE9DFC7),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -368,8 +368,8 @@ class _MyWidgetState extends State<MyWidget> {
                         'Unang Hakbang',
                         'Kumpletuhin ang unang aralin',
                         Icons.star,
-                        const Color(0xFF5271FF),
-                        Colors.purple,
+                        const Color(0xFF4e0506),
+                        const Color(0xFF4e0506),
                         isCompleted: true,
                       ),
                       const SizedBox(height: 8),
@@ -377,8 +377,8 @@ class _MyWidgetState extends State<MyWidget> {
                         'Modyul',
                         'Manood ng 10 araling bidyo',
                         Icons.book,
-                        const Color(0xFF7ED957),
-                        const Color(0xFF7ED957),
+                        const Color(0xFF4e0506),
+                        const Color(0xFF4e0506),
                         isCompleted: true,
                       ),
                       const SizedBox(height: 20),
@@ -388,8 +388,8 @@ class _MyWidgetState extends State<MyWidget> {
                         'Perpektong Iskor',
                         'Kumuhang 100% sa anumang pagsusulit',
                         Icons.adjust,
-                        const Color(0xFFEF2525),
-                        const Color(0xFFEF2525),
+                        const Color(0xFF4e0506),
+                        const Color(0xFF4e0506),
                         isCompleted: false,
                       ),
                       const SizedBox(height: 20),
@@ -450,7 +450,7 @@ class _MyWidgetState extends State<MyWidget> {
             padding: const EdgeInsets.only(right: 8),
             child: _buildCertificateCard(
               antas['title'] ?? 'Walang Pamagat',
-              isDone ? const Color(0xFF7ED957) : const Color(0xFFEDEDED),
+              isDone ? const Color(0xFF7ED957) : const Color(0xFF4e0506),
               isDone ? Icons.military_tech : Icons.lock,
               isActive: isDone,
               certificateIndex: index,
@@ -488,10 +488,10 @@ class _MyWidgetState extends State<MyWidget> {
         width: 100,
         height: 80,
         decoration: BoxDecoration(
-          color: isActive ? color.withOpacity(0.1) : const Color(0xFFEDEDED),
+          color: isActive ? color.withOpacity(0.1) : const Color(0xFF4e0506).withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isActive ? const Color(0xFF7ED957) : const Color(0xFFEDEDED),
+            color: isActive ? const Color(0xFF7ED957) : const Color(0xFF4e0506),
             width: 1,
           ),
         ),
@@ -500,7 +500,7 @@ class _MyWidgetState extends State<MyWidget> {
           children: [
             Icon(
               icon,
-              color: isActive ? const Color(0xFF7ED957) : Colors.grey.shade600,
+              color: isActive ? const Color(0xFF7ED957) : const Color(0xFF4e0506),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -628,7 +628,7 @@ class _MyWidgetState extends State<MyWidget> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: _equippedAvatarId == avatarId ? Colors.green : Colors.grey.shade300,
+            color: _equippedAvatarId == avatarId ? Colors.green : const Color(0xFF4e0506),
             width: _equippedAvatarId == avatarId ? 2 : 1,
           ),
         ),
