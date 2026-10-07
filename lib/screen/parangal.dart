@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:felamo/baseurl/baseurl.dart';
+import 'package:felamo/services/error_helper.dart';
 
 class MyWidget extends StatefulWidget {
   final String sessionId;
@@ -58,21 +59,17 @@ class _MyWidgetState extends State<MyWidget> {
           setState(() {
             _isLoading = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to fetch avatars: ${data['message'] ?? 'Unknown error'}')),
-          );
+          ErrorHelper.showSnack(context, ErrorHelper.fromResponse(response));
         }
       } else {
         print('Avatars fetch error: HTTP ${response.statusCode}');
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error fetching avatars: HTTP ${response.statusCode}')),
-        );
+        ErrorHelper.showSnack(context, ErrorHelper.fromResponse(response));
       }
     } catch (e) {
-      print('Avatars fetch exception: $e');
+      ErrorHelper.showSnack(context, ErrorHelper.fromException(e));
       setState(() {
         _isLoading = false;
       });
@@ -183,39 +180,29 @@ class _MyWidgetState extends State<MyWidget> {
 
   Future<void> _buyAvatar(int avatarId) async {
     const url = '${baseUrl}avail-avatar.php';
-    final body = jsonEncode({
-      "session_id": widget.sessionId,
-      "avatar_id": avatarId
-    });
-
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "session_id": widget.sessionId,
+              "avatar_id": avatarId,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['message'] ?? 'Avatar purchased successfully')),
-          );
-          await _fetchAvatars();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['message'] ?? 'Failed to purchase avatar')),
-          );
-        }
+      // Read the body for ANY status, so the 403 message gets through
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == 'success') {
+        ErrorHelper.showSnack(context, 'Matagumpay na nabili ang avatar!',
+            isError: false);
+        await _fetchAvatars();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error purchasing avatar: HTTP ${response.statusCode}')),
-        );
+        ErrorHelper.showSnack(context, ErrorHelper.fromResponse(response));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error purchasing avatar: $e')),
-      );
+      ErrorHelper.showSnack(context, ErrorHelper.fromException(e));
     }
   }
 

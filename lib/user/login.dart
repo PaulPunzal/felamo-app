@@ -408,20 +408,10 @@ class _LoginState extends State<Login> {
                         _buildTextField(
                           controller: emailController,
                           label: 'Email',
-                          hint: '',
+                          hint: 'Enter Email',
                           icon: Icons.email_outlined,
                           iconColor: primaryRed,
                           keyboardType: TextInputType.emailAddress,
-                          suffix: const Padding(
-                            padding: EdgeInsets.only(right: 12, top: 14),
-                            child: Text(
-                              '@gmail.com',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
                         ),
                         const SizedBox(height: 16),
 

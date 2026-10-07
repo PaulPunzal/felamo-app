@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:felamo/baseurl/baseurl.dart';
+import 'package:felamo/services/error_helper.dart';
 
 class TalaNgRanggoScreen extends StatefulWidget {
   final String sessionId;
@@ -12,9 +13,17 @@ class TalaNgRanggoScreen extends StatefulWidget {
 }
 
 class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
-  final List<RankingItem> topThree = [];
-  final List<RankingItem> otherRankings = [];
+  List<RankingItem> rankings = [];
   bool isLoading = true;
+  bool isLoadingMore = false;
+  bool hasMore = false;
+  int? myRank;
+
+  static const int firstPageSize = 13; // podium (3) + 10 rows
+  static const int nextPageSize = 10;
+
+  List<RankingItem> get topThree => rankings.take(3).toList();
+  List<RankingItem> get otherRankings => rankings.skip(3).toList();
 
   @override
   void initState() {
@@ -22,51 +31,63 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
     fetchLeaderBoard();
   }
 
-  Future<void> fetchLeaderBoard() async {
+  Future<void> fetchLeaderBoard({bool loadMore = false}) async {
+    if (loadMore) {
+      if (isLoadingMore) return;
+      setState(() => isLoadingMore = true);
+    }
+
     final url = Uri.parse('${baseUrl}get-overall-leader-boards.php');
 
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"session_id": widget.sessionId}),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'session_id': widget.sessionId,
+              'limit': loadMore ? nextPageSize : firstPageSize,
+              'offset': loadMore ? rankings.length : 0,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          List<RankingItem> rankings = (data['data'] as List)
-              .map((item) => RankingItem(
-                    name: item['first_name'] ?? '',
-                    points: "${item['points'] ?? 0} Puntos",
-                    rawPoints: item['points'] ?? 0,
-                    rank: 0,
-                  ))
-              .toList();
+      final data = jsonDecode(response.body);
 
-          // Sort by points
-          rankings.sort((a, b) => b.rawPoints.compareTo(a.rawPoints));
+      if (response.statusCode == 200 && data['status'] == 'success') {
+        final newItems = (data['data'] as List).map((item) {
+          final pts = int.tryParse(item['total_points'].toString()) ?? 0;
+          return RankingItem(
+            id: int.tryParse(item['id'].toString()) ?? 0,
+            name: item['first_name'] ?? '',
+            points: "$pts Puntos",
+            rawPoints: pts,
+            rank: int.tryParse(item['rank'].toString()) ?? 0,
+          );
+        }).toList();
 
-          // Assign ranks
-          for (int i = 0; i < rankings.length; i++) {
-            rankings[i] = rankings[i].copyWith(rank: i + 1);
+        if (!mounted) return;
+        setState(() {
+          if (loadMore) {
+            rankings.addAll(newItems);
+          } else {
+            rankings = newItems;
           }
-
-          setState(() {
-            topThree.clear();
-            otherRankings.clear();
-            topThree.addAll(rankings.take(3));
-            otherRankings.addAll(rankings.skip(3));
-            isLoading = false;
-          });
-        } else {
-          setState(() => isLoading = false);
-        }
+          hasMore = data['has_more'] == true;
+          myRank = int.tryParse(data['my_rank'].toString());
+          isLoading = false;
+          isLoadingMore = false;
+        });
       } else {
-        setState(() => isLoading = false);
+        throw Exception(data['message'] ?? 'failed');
       }
     } catch (e) {
-      setState(() => isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        isLoadingMore = false;
+      });
+      ErrorHelper.showSnack(context, ErrorHelper.fromException(e));
     }
   }
 
@@ -146,8 +167,28 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
                             Expanded(
                               child: ListView.builder(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: otherRankings.length,
+                                itemCount: otherRankings.length + (hasMore ? 1 : 0),
                                 itemBuilder: (context, index) {
+                                  if (index == otherRankings.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      child: Center(
+                                        child: isLoadingMore
+                                            ? const CircularProgressIndicator(color: Color(0xFF4e0506))
+                                            : OutlinedButton.icon(
+                                                onPressed: () => fetchLeaderBoard(loadMore: true),
+                                                icon: const Icon(Icons.expand_more, color: Color(0xFF4e0506)),
+                                                label: const Text('Magpakita pa',
+                                                    style: TextStyle(color: Color(0xFF4e0506))),
+                                                style: OutlinedButton.styleFrom(
+                                                  side: const BorderSide(color: Color(0xFF4e0506)),
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(20)),
+                                                ),
+                                              ),
+                                      ),
+                                    );
+                                  }
                                   return _buildRankingListItem(otherRankings[index]);
                                 },
                               ),
@@ -169,7 +210,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Iyong Ranggo: #5',
+                                myRank != null ? 'Iyong Ranggo: #$myRank' : 'Iyong Ranggo: --',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -225,7 +266,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
         children: [
           Container(
             width: 85,
-            height: cardHeight - 35,
+            constraints: const BoxConstraints(minHeight: cardHeight - 35),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -242,6 +283,7 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
                 : Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(medalIcon, color: medalColor, size: 28),
@@ -340,20 +382,23 @@ class _TalaNgRanggoScreenState extends State<TalaNgRanggoScreen> {
 }
 
 class RankingItem {
+  final int id;
   final String name;
   final String points;
   final int rawPoints;
   final int rank;
 
   RankingItem({
+    required this.id,
     required this.name,
     required this.points,
     required this.rawPoints,
     required this.rank,
   });
 
-  RankingItem copyWith({String? name, String? points, int? rawPoints, int? rank}) {
+  RankingItem copyWith({int? id, String? name, String? points, int? rawPoints, int? rank}) {
     return RankingItem(
+      id: id ?? this.id,
       name: name ?? this.name,
       points: points ?? this.points,
       rawPoints: rawPoints ?? this.rawPoints,

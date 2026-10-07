@@ -35,7 +35,7 @@ class Dashboard extends StatefulWidget {
   State<Dashboard> createState() => _DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   List<Antas> antasList = [];
   int _currentIndex = 0;
   int _progressPercentage = 0;
@@ -44,10 +44,12 @@ class _DashboardState extends State<Dashboard> {
   String? _profilePicture;
   String? _avatarFileName;
   int _profileFetchedAt = 0;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     print('Dashboard Initialized: sessionId=${widget.sessionid}, id=${widget.id}, firstName=${widget.firstName}');
     fetchAntas();
     fetchProgressPercentage();
@@ -58,7 +60,26 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.addObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshAll();
+    }
+  }
+
+  Future<void> _refreshAll() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    await Future.wait([
+      fetchProfile(),
+      fetchProgressPercentage(),
+      fetchAntas(),
+    ]);
+    if (mounted) setState(() => _isRefreshing = false);
   }
 
   Future<void> _checkAndShowStreakModal() async {
@@ -418,14 +439,19 @@ class _DashboardState extends State<Dashboard> {
           color: Color(0xFF330006),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeader(),
-                _buildProgressCard(),
-                _buildLevelList(),
-                SizedBox(height: 80),
-              ],
+          child: RefreshIndicator(
+            color: const Color(0xFF4e0506),
+            onRefresh: _refreshAll,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  _buildProgressCard(),
+                  _buildLevelList(),
+                  SizedBox(height: 80),
+                ],
+              ),
             ),
           ),
         ),

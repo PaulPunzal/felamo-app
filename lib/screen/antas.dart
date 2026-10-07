@@ -39,6 +39,21 @@ class _AntasPageState extends State<AntasPage> {
     // We don't call _checkQuizCompletion() here anymore; fetchLessons() will call it once data is loaded.
   }
 
+  String get _antasTitle {
+    switch (widget.id) {
+      case 1:
+        return 'Unang Markahan';
+      case 2:
+        return 'Pangalawang Markahan';
+      case 3:
+        return 'Pangatlong Markahan';
+      case 4:
+        return 'Ika-apat na Markahan';
+      default:
+        return 'Markahan';
+    }
+  }
+
   // ── FIX 1: Create a dynamic getter for the currently selected Aralin ID ──
   int get _currentAralinId {
     if (lessons.isEmpty) return widget.aralinId;
@@ -278,9 +293,9 @@ Widget _buildHeroSection() {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Panimulang Antas',
-                style: TextStyle(
+              Text(
+                _antasTitle,
+                style: const TextStyle(
                   color: Color(0xFF330006),
                   fontSize: 17,
                   fontWeight: FontWeight.w500,

@@ -4,6 +4,7 @@
 // const String domainUrl = 'https://darkslategrey-jay-754607.hostingersite.com'; // old live server
 // const String domainUrl = 'http://10.162.123.251/felamo';
 
+// const String domainUrl = 'http://192.168.100.26/felamo';
 // const String domainUrl = 'http://127.0.0.1:8080/felamo'; // Localhost server
 
 const String domainUrl = 'https://felamo.online'; // Live server

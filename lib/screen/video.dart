@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../baseurl/baseurl.dart';
 import 'package:felamo/screen/quez.dart';
+import 'package:felamo/services/error_helper.dart';
 
 class LessonScreen extends StatefulWidget {
   final int id;
@@ -46,6 +47,9 @@ class _LessonScreenState extends State<LessonScreen>
   // ── Extra UI state ─────────────────────────────────────────────────────────
   bool _showVideoControls = true;
   bool _isBuffering = false;
+
+  String? _loadError;    // <-- add
+  String? _videoError;   // <-- add
 
   @override
   void initState() {
@@ -94,18 +98,19 @@ class _LessonScreenState extends State<LessonScreen>
     }
   }
 
+
   Future<void> fetchLesson() async {
+    setState(() => _loadError = null);
     final url = Uri.parse('${baseUrl}get-aralin.php');
-    print('Fetching lessons for antasId: ${widget.antasId}, sessionId: ${widget.sessionId}');
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'session_id': widget.sessionId,
-          'level_id': widget.antasId,
-        }),
-      );
+      final response = await http
+          .post(url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'session_id': widget.sessionId,
+                'level_id': widget.antasId,
+              }))
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
@@ -115,8 +120,8 @@ class _LessonScreenState extends State<LessonScreen>
             videoCompletionStatus = List.generate(lessons.length, (i) {
               final l = lessons[i];
               final isDone = l['is_done'] == true || l['is_done'] == 1;
-              final needsRewatch = l['needs_rewatch'] == true || l['needs_rewatch'] == 1;
-              // It is only "completed" for this session if it's done AND doesn't need a rewatch
+              final needsRewatch =
+                  l['needs_rewatch'] == true || l['needs_rewatch'] == 1;
               return isDone && !needsRewatch;
             });
           });
@@ -131,57 +136,30 @@ class _LessonScreenState extends State<LessonScreen>
             }
             initializeVideo(targetIndex);
           } else {
-            print('No lessons found');
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('No lessons available', style: GoogleFonts.poppins(fontSize: 14)),
-                  backgroundColor: Colors.redAccent,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              setState(() => _loadError = 'Walang available na aralin.');
             }
           }
         } else {
-          print('Fetch lesson failed: ${jsonData['message'] ?? 'No message'}');
+          // Server replied 200 but with an error message
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to fetch lessons: ${jsonData['message'] ?? 'Unknown error'}',
-                    style: GoogleFonts.poppins(fontSize: 14)),
-                backgroundColor: Colors.redAccent,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            setState(() => _loadError =
+                jsonData['message']?.toString() ?? ErrorHelper.unknownMessage);
           }
         }
       } else {
-        print('Fetch lesson failed with status: ${response.statusCode}');
+        // Non-200 HTTP status
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Server error: HTTP ${response.statusCode}', style: GoogleFonts.poppins(fontSize: 14)),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          setState(() => _loadError = ErrorHelper.fromResponse(response));
         }
       }
     } catch (e) {
-      print('Fetch lesson error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Network error: $e', style: GoogleFonts.poppins(fontSize: 14)),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (mounted) setState(() => _loadError = ErrorHelper.fromException(e));
     }
   }
 
   void initializeVideo(int index) {
+    setState(() => _videoError = null); 
     if (index >= lessons.length || index < 0) {
       print('Invalid video index: $index, lessons length: ${lessons.length}');
       if (mounted) {
@@ -313,13 +291,8 @@ class _LessonScreenState extends State<LessonScreen>
       }).catchError((error) {
         print('Video init error: $error');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to load video: $error', style: GoogleFonts.poppins(fontSize: 14)),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          setState(() => _videoError =
+              'Hindi ma-play ang bidyo. Pakisuri ang iyong internet connection at subukan muli.');
         }
       });
     }
@@ -445,9 +418,26 @@ class _LessonScreenState extends State<LessonScreen>
             ),
           );
         }
+      } else {
+        // Server answered but not OK: undo the local "completed" state
+        if (mounted) {
+          setState(() {
+            videoCompletionStatus[index] = false;
+            isVideoCompleted = false;
+          });
+          ErrorHelper.showSnack(context, ErrorHelper.fromResponse(response));
+        }
       }
     } catch (e) {
-      print('Error in _showCompletionDialog: $e');
+      // Offline or timeout: the server never recorded the completion
+      if (mounted) {
+        setState(() {
+          videoCompletionStatus[index] = false;
+          isVideoCompleted = false;
+        });
+        ErrorHelper.showSnack(context,
+            'Hindi na-save ang iyong progreso. ${ErrorHelper.fromException(e)}');
+      }
     }
   }
 
@@ -559,21 +549,47 @@ class _LessonScreenState extends State<LessonScreen>
         _buildAppBarArea(),
         Expanded(
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: Color(0xFFB71C1C), strokeWidth: 2.5),
-                const SizedBox(height: 16),
-                Text('Naglo-load ng aralin...',
-                    style: GoogleFonts.poppins(fontSize: 14, color: Colors.white54)),
-              ],
-            ),
+            child: _loadError != null
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off_rounded,
+                            color: Colors.white54, size: 56),
+                        const SizedBox(height: 16),
+                        Text(_loadError!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                                fontSize: 14, color: Colors.white70)),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: fetchLesson,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Subukan muli'),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFB71C1C),
+                              foregroundColor: Colors.white),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(
+                          color: Color(0xFFB71C1C), strokeWidth: 2.5),
+                      const SizedBox(height: 16),
+                      Text('Naglo-load ng aralin...',
+                          style: GoogleFonts.poppins(
+                              fontSize: 14, color: Colors.white54)),
+                    ],
+                  ),
           ),
         ),
       ],
     );
   }
-
   // ── Full screen player ─────────────────────────────────────────────────────
 
   Widget _buildFullScreenPlayer() {
@@ -867,7 +883,7 @@ class _LessonScreenState extends State<LessonScreen>
               _controller!.play();
             }
           });
-        } else {
+        } else if (_videoError == null) {
           toggleFullScreen();
         }
       },
@@ -881,22 +897,46 @@ class _LessonScreenState extends State<LessonScreen>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Video or placeholder
-              if (isVideoInitialized && _controller != null)
-                VideoPlayer(_controller!)
-              else
-                Container(
-                  color: const Color(0xFF1A1A1A),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(color: Color(0xFFB71C1C), strokeWidth: 2.5),
-                      const SizedBox(height: 14),
-                      Text('Inihahanda ang bidyo...',
-                          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
-                    ],
-                  ),
+            // Video or placeholder
+            if (isVideoInitialized && _controller != null)
+              VideoPlayer(_controller!)
+            else if (_videoError != null)
+              Container(
+                color: const Color(0xFF1A1A1A),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, color: Colors.white54, size: 40),
+                    const SizedBox(height: 10),
+                    Text(
+                      _videoError!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: () => initializeVideo(currentPlayingIndex),
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      label: Text('Subukan muli',
+                          style: GoogleFonts.poppins(color: Colors.white)),
+                    ),
+                  ],
                 ),
+              )
+            else
+              Container(
+                color: const Color(0xFF1A1A1A),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFFB71C1C), strokeWidth: 2.5),
+                    const SizedBox(height: 14),
+                    Text('Inihahanda ang bidyo...',
+                        style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
+                  ],
+                ),
+              ),
 
               // Buffering spinner
               if (_isBuffering && isVideoInitialized)
