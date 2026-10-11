@@ -211,12 +211,18 @@ class _SignUpState extends State<SignUp> {
     }
   }
 
-  void _showSuccessDialog() {
+    void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Success!', style: TextStyle(color: Color(0xFFDC143C))),
+        title: const Text(
+          'Success!',
+          style: TextStyle(
+            color: Color(0xFF2E7D32),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: const Text('Registration successful.\nYou can now log in.'),
         actions: [
           TextButton(
@@ -224,7 +230,13 @@ class _SignUpState extends State<SignUp> {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('OK', style: TextStyle(color: Color(0xFFDC143C))),
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
