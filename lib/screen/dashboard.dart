@@ -474,6 +474,13 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   }
 
   Widget _buildHeader() {
+    final bool hasFrame = _avatarFileName != null && _avatarFileName!.isNotEmpty;
+
+    // Tweak these numbers if the fit isn't perfect for your frame art.
+    const double frameSize = 120;                      // outer size of the frame
+    final double pictureSize = hasFrame ? 68 : 84;    // profile pic sits inside the frame opening
+    const double verticalOffset = 6;                  // moves ONLY the frame down (negative = up)
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
       padding: const EdgeInsets.all(16.0),
@@ -483,27 +490,24 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
       ),
       child: Row(
         children: [
-          // Stack keeps the Frame directly on top of the Profile Picture
           SizedBox(
-            width: 76,
-            height: 76,
+            width: frameSize,
+            height: frameSize,
             child: Stack(
               alignment: Alignment.center,
+              clipBehavior: Clip.none,
               children: [
-                // 1. Profile Picture (Inner Circle) - Size 70x70
+                // 1. Profile picture (stays fixed in the center)
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: pictureSize,
+                  height: pictureSize,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(35),
-                    border: Border.all(color: Colors.white, width: 2),
+                    shape: BoxShape.circle,
+                    border: hasFrame ? null : Border.all(color: Colors.white, width: 2),
                     image: DecorationImage(
                       image: _profilePicture != null && _profilePicture!.isNotEmpty
                           ? Image.network(
-                              // Cache-busting query param: without this, Flutter's
-                              // image cache keeps serving the old bytes for the
-                              // same URL even after you upload a new picture.
                               '${storageUrl}profile-pictures/${path.basename(_profilePicture!)}?v=$_profileFetchedAt',
                               errorBuilder: (context, error, stackTrace) {
                                 print('Error loading profile picture: $error');
@@ -516,29 +520,20 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                   ),
                 ),
 
-                // 2. Avatar/Frame (Outer Layer)
-                // Only render this on top when the user actually has a custom
-                // frame set. Otherwise it just duplicates the default profile
-                // image and makes the avatar look "doubled".
-                if (_avatarFileName != null && _avatarFileName!.isNotEmpty)
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(38),
-                      image: DecorationImage(
-                        image: Image.network(
-                          '${storageUrl}assets/$_avatarFileName',
-                          errorBuilder: (context, error, stackTrace) {
-                            print('Error loading avatar frame: $error');
-                            // Fall back to nothing rather than the default
-                            // profile picture, to avoid the duplicate look.
-                            return const SizedBox.shrink();
-                          },
-                        ).image,
-                        // Note: Depending on your frame's transparent padding, you might
-                        // need to change this to BoxFit.contain instead of BoxFit.cover
-                        fit: BoxFit.cover,
+                // 2. Avatar frame (only the frame is shifted by verticalOffset)
+                if (hasFrame)
+                  Transform.translate(
+                    offset: const Offset(0, verticalOffset),
+                    child: IgnorePointer(
+                      child: Image.network(
+                        '${storageUrl}assets/$_avatarFileName',
+                        width: frameSize,
+                        height: frameSize,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('Error loading avatar frame: $error');
+                          return const SizedBox.shrink();
+                        },
                       ),
                     ),
                   ),
