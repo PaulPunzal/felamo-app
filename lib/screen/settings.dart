@@ -1,3 +1,4 @@
+import 'package:path/path.dart' as path;
 import 'package:felamo/screen/about.dart';
 import 'package:felamo/screen/parangal.dart';
 import 'package:felamo/screen/ranggo.dart';
@@ -33,7 +34,75 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _soundEffectsEnabled = true;
-  // bool _darkModeEnabled = false;
+  int? _points;
+  int? _myRank;
+  String? _profilePicture;
+  String? _avatarFileName;
+  int _profileFetchedAt = 0;
+  bool _isProfileLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileSummary();
+  }
+
+  Future<void> _loadProfileSummary() async {
+    try {
+      final results = await Future.wait([
+        http.post(
+          Uri.parse('${baseUrl}get-profile.php'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'session_id': widget.sessionId}),
+        ),
+        http.post(
+          Uri.parse('${baseUrl}get-overall-leader-boards.php'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'session_id': widget.sessionId,
+            'limit': 1,
+            'offset': 0,
+          }),
+        ),
+      ]).timeout(const Duration(seconds: 20));
+
+      int? points;
+      String? profilePicture;
+      String? avatarFileName;
+      int? rank;
+
+      final profileRes = results[0];
+      if (profileRes.statusCode == 200) {
+        final data = jsonDecode(profileRes.body);
+        if (data['status'] == 'success' && data['data'] != null) {
+          points = int.tryParse(data['data']['points']?.toString() ?? '');
+          profilePicture = data['data']['profile_picture']?.toString();
+          avatarFileName = data['data']['avatar_file_name']?.toString();
+        }
+      }
+
+      final rankRes = results[1];
+      if (rankRes.statusCode == 200) {
+        final data = jsonDecode(rankRes.body);
+        if (data['status'] == 'success') {
+          rank = int.tryParse(data['my_rank']?.toString() ?? '');
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _points = points;
+        _profilePicture = profilePicture;
+        _avatarFileName = avatarFileName;
+        _myRank = rank;
+        _profileFetchedAt = DateTime.now().millisecondsSinceEpoch;
+        _isProfileLoading = false;
+      });
+    } catch (e) {
+      print('Settings profile summary error: $e');
+      if (mounted) setState(() => _isProfileLoading = false);
+    }
+  }
 
   void _showChangePasswordModal() {
     final TextEditingController currentPasswordController = TextEditingController();
@@ -268,6 +337,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildProfileAvatar() {
+    final hasPicture = _profilePicture != null && _profilePicture!.isNotEmpty;
+
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: ClipOval(
+        child: hasPicture
+            ? Image.network(
+                '${storageUrl}profile-pictures/${path.basename(_profilePicture!)}?v=$_profileFetchedAt',
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Image.asset('assets/profile.png', fit: BoxFit.cover),
+              )
+            : Image.asset('assets/profile.png', fit: BoxFit.cover),
+      ),
+    );
+  }
+
+  Widget _buildProfileCard() {
+    final rankText = _isProfileLoading
+        ? 'Naglo-load...'
+        : '${_myRank != null ? 'Ranggo #$_myRank' : 'Ranggo --'} - ${_points ?? 0} puntos';
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Profile(sessionId: widget.sessionId)),
+        );
+        // Refresh after coming back so a new picture shows immediately
+        _loadProfileSummary();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF330006).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            _buildProfileAvatar(),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.firstName,
+                    style: GoogleFonts.leagueSpartan(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    rankText,
+                    style: GoogleFonts.leagueSpartan(
+                      color: Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    widget.email,
+                    style: GoogleFonts.leagueSpartan(
+                      color: Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.black54),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -310,66 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => Profile(sessionId: widget.sessionId)),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF330006).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const Icon(Icons.person, color: Colors.white, size: 30),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.firstName,
-                                  style: GoogleFonts.leagueSpartan(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Ranggo #5 - 2050 puntos',
-                                  style: GoogleFonts.leagueSpartan(
-                                    color: Colors.black54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  widget.email,
-                                  style: GoogleFonts.leagueSpartan(
-                                    color: Colors.black54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.arrow_forward_ios, color: Colors.black54),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _buildProfileCard(),
                   const SizedBox(height: 20),
                   _buildSettingsOption(
                     icon: Icons.history_rounded,

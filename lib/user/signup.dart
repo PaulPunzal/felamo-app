@@ -45,7 +45,7 @@ class _SignUpState extends State<SignUp> {
   void _startResendTimer() {
     setState(() {
       _canResend = false;
-      _countdown = 60;
+      _countdown = 180;
     });
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {

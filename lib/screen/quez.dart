@@ -1181,7 +1181,7 @@ class _DifficultyBadge extends StatelessWidget {
       color = const Color(0xFFC62828);
       bg    = const Color(0xFFFFEBEE);
     } else {
-      label = 'Avg';
+      label = 'Average';
       color = const Color(0xFFE65100);
       bg    = const Color(0xFFFFF3E0);
     }
